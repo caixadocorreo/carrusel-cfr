@@ -344,7 +344,7 @@ function renderRelators(str) {
 function converterURL(url) {
   if (!url || !url.trim()) return '';
   const m = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
-  if (m) return 'https://drive.google.com/uc?export=view&id=' + m[1];
+  if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
   return url.trim();
 }
 
@@ -424,6 +424,7 @@ function mostrar(idx) {
   document.querySelectorAll('.tarxeta').forEach((t, i) => {
     t.classList.toggle('activa', i === idx);
   });
+  setTimeout(enviarAltura, 100);
   document.querySelectorAll('.dot').forEach((d, i) => {
     d.classList.toggle('activo', i === idx);
   });
@@ -534,6 +535,18 @@ async function cargar() {
 }
 
 cargar();
+</script>
+<script>
+function enviarAltura() {
+  const altura = document.getElementById('carrusel').scrollHeight + 40;
+  window.parent.postMessage({ tipo: 'alturaCarrusel', altura: altura }, '*');
+}
+// Enviar altura ao cargar e cada vez que cambia o slide
+const observador = new ResizeObserver(enviarAltura);
+observador.observe(document.getElementById('carrusel'));
+window.addEventListener('load', enviarAltura);
+setTimeout(enviarAltura, 500);
+setTimeout(enviarAltura, 1500);
 </script>
 </body>
 </html>
