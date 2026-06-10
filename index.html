@@ -341,10 +341,18 @@ function renderRelators(str) {
   return str.split(';').map(r => r.trim()).filter(Boolean).join('<br>');
 }
 
+function converterURL(url) {
+  if (!url || !url.trim()) return '';
+  const m = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
+  if (m) return 'https://drive.google.com/uc?export=view&id=' + m[1];
+  return url.trim();
+}
+
 function renderTarxeta(d) {
   const cor = (d.corFondo && d.corFondo.trim()) ? d.corFondo.trim() : 'var(--azul)';
-  const imaxe = d.imagenURL
-    ? `<img src="${d.imagenURL}" alt="${d.titulo}" loading="lazy">`
+  const urlImaxe = converterURL(d.imagenURL);
+  const imaxe = urlImaxe
+    ? `<img src="${urlImaxe}" alt="${d.titulo}" loading="lazy">`
     : `<div class="col-imaxe-placeholder">
         <svg class="placeholder-svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#007bc4" stroke-width="1">
           <rect x="3" y="3" width="18" height="18" rx="2"/>
