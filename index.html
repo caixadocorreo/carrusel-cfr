@@ -221,6 +221,21 @@
     text-align: center;
   }
 
+  /* Tarxeta a pantalla completa (portada/contraportada/promo) */
+  .tarxeta-completa {
+    width: 100%;
+    height: 100%;
+    min-height: 280px;
+  }
+
+  .tarxeta-completa img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: white;
+    display: block;
+  }
+
   /* Sen formacións */
   .sen-formacions {
     text-align: center;
@@ -315,6 +330,7 @@ function parsarCSV(texto) {
       relatores:        cols[8] || '',
       imagenURL:        cols[9] || '',
       corFondo:         cols[10] || '',
+      tipo:             (cols[11] || 'formacion').toLowerCase().trim(),
     };
   });
 }
@@ -326,9 +342,21 @@ function filtrarVisibles(datos) {
   const h = hoxe();
   return datos.filter(d => {
     const inicio = parsarData(d.dataInicioVisual);
+    if (!inicio) return false;
+
+    if (d.tipo === 'portada' || d.tipo === 'contraportada' || d.tipo === 'promo') {
+      // Usan DataFin directamente como fin de visualización
+      const fin = parsarData(d.dataFin);
+      if (!fin) return h >= inicio; // sen data fin = sempre visible desde o inicio
+      const finExclusivo = new Date(fin);
+      finExclusivo.setDate(finExclusivo.getDate() + 1);
+      finExclusivo.setHours(0,0,0,0);
+      return h >= inicio && h < finExclusivo;
+    }
+
+    // Formacións normais: fin = día seguinte á data de inicio da actividade
     const actInicio = parsarData(d.dataInicio);
-    if (!inicio || !actInicio) return false;
-    // Fin de visualización = día seguinte á data de inicio da actividade
+    if (!actInicio) return false;
     const fin = new Date(actInicio);
     fin.setDate(fin.getDate() + 1);
     fin.setHours(0,0,0,0);
@@ -349,6 +377,16 @@ function converterURL(url) {
   const m = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
   if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
   return url.trim();
+}
+
+function renderTarxetaCompleta(d) {
+  const urlImaxe = converterURL(d.imagenURL);
+  return `
+    <div class="tarxeta" data-id="${d.codigo || d.tipo}">
+      <div class="tarxeta-completa">
+        ${urlImaxe ? `<img src="${urlImaxe}" alt="${d.tipo}" loading="lazy">` : ''}
+      </div>
+    </div>`;
 }
 
 function renderTarxeta(d) {
@@ -457,8 +495,24 @@ function iniciarBarra() {
   }, 50);
 }
 
+function ordenarConTipos(visibles) {
+  const portada = visibles.filter(d => d.tipo === 'portada');
+  const contraportada = visibles.filter(d => d.tipo === 'contraportada');
+  const promos = visibles.filter(d => d.tipo === 'promo');
+  const formacions = visibles.filter(d => d.tipo === 'formacion' || !d.tipo);
+
+  // Mesturar promos en posicións aleatorias entre as formacións
+  const resultado = [...formacions];
+  promos.forEach(promo => {
+    const pos = Math.floor(Math.random() * (resultado.length + 1));
+    resultado.splice(pos, 0, promo);
+  });
+
+  return [...portada, ...resultado, ...contraportada];
+}
+
 function init(datos) {
-  formacions = filtrarVisibles(datos);
+  formacions = ordenarConTipos(filtrarVisibles(datos));
   const contido = document.getElementById('contido');
   const nav = document.getElementById('navegacion');
 
@@ -474,7 +528,11 @@ function init(datos) {
     return;
   }
 
-  contido.innerHTML = formacions.map(renderTarxeta).join('');
+  contido.innerHTML = formacions.map(d =>
+    (d.tipo === 'portada' || d.tipo === 'contraportada' || d.tipo === 'promo')
+      ? renderTarxetaCompleta(d)
+      : renderTarxeta(d)
+  ).join('');
 
   // Dots e navegación
   if (formacions.length > 1) {
@@ -510,6 +568,7 @@ async function cargar() {
         lugar: 'CFR de Vigo',
         relatores: 'María Beatriz Álvarez Vila; Raquel Gey Piñeiro',
         imagenURL: '',
+        tipo: 'formacion',
       },
       {
         dataInicioVisual: '01/01/2026',
@@ -522,6 +581,7 @@ async function cargar() {
         lugar: 'CFR de Vigo',
         relatores: 'Andrea Patiño Vázquez',
         imagenURL: '',
+        tipo: 'formacion',
       },
     ];
     init(exemplo);
