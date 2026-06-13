@@ -221,6 +221,38 @@
     text-align: center;
   }
 
+  /* Banner ticker inferior */
+  .ticker-wrap {
+    overflow: hidden;
+    white-space: nowrap;
+    height: 36px;
+    display: flex;
+    align-items: center;
+  }
+  .ticker-track {
+    display: inline-flex;
+    white-space: nowrap;
+    animation: ticker-scroll var(--ticker-duracion, 30s) linear infinite;
+    will-change: transform;
+  }
+  .ticker-wrap:hover .ticker-track,
+  .ticker-wrap:focus-within .ticker-track {
+    animation-play-state: paused;
+  }
+  .ticker-track span {
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 0 40px;
+  }
+  @keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; }
+  }
+
   /* Tarxeta a pantalla completa (portada/contraportada/promo) */
   .tarxeta-completa {
     width: 100%;
@@ -277,6 +309,32 @@
 // CONFIGURACIÓN
 // ============================================================
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXug9fi-BDfJdcjfWOrGwx4cnuTMTuRTRCthpGMrLwcV6ldAF3VgLK472PzSHJPzooHIdphoj9W1Uq/pub?gid=0&single=true&output=csv';
+const CSV_FRASES_URL = 'PENDENTE_URL_FRASES';
+
+async function cargarFrases() {
+  if (CSV_FRASES_URL === 'PENDENTE_URL_FRASES') {
+    FRASES = ['Novo Plan Anual de Formación 2025-2026 xa dispoñible en FPROFE'];
+    return;
+  }
+  try {
+    const resp = await fetch(CSV_FRASES_URL);
+    const texto = await resp.text();
+    const liñas = texto.trim().split('\n').slice(1);
+    FRASES = liñas.filter(l => l.trim()).map(l => {
+      const cols = [];
+      let cur='', inQ=false;
+      for (let i=0;i<l.length;i++){
+        const c=l[i];
+        if(c==='"'){inQ=!inQ;}
+        else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+        else{cur+=c;}
+      }
+      cols.push(cur.trim());
+      return { texto: cols[0]||'', activo: (cols[1]||'').toLowerCase().trim() };
+    }).filter(f => f.texto && f.activo !== 'non' && f.activo !== 'no')
+      .map(f => f.texto);
+  } catch(e) { console.error('Erro ao cargar frases:', e); }
+}
 const INTERVALO_SEGUNDOS = 8;
 
 // ============================================================
@@ -372,6 +430,21 @@ function renderRelators(str) {
   return str.split(';').map(r => r.trim()).filter(Boolean).join('<br>');
 }
 
+let FRASES = [];
+
+function renderTicker(cor) {
+  if (!FRASES.length) return '';
+  // Duplicamos a secuencia para o bucle continuo
+  const seq = FRASES.map(f => `<span>${f}</span>`).join('');
+  // Velocidade constante: ~60px/s aprox. segundo o total de caracteres
+  const totalCaracteres = FRASES.join(' ').length;
+  const duracion = Math.max(20, totalCaracteres * 0.18);
+  return `
+    <div class="ticker-wrap" style="background:${cor}" tabindex="0" aria-label="Mensaxes informativas">
+      <div class="ticker-track" style="--ticker-duracion:${duracion}s">${seq}${seq}</div>
+    </div>`;
+}
+
 function converterURL(url) {
   if (!url || !url.trim()) return '';
   const m = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
@@ -381,11 +454,13 @@ function converterURL(url) {
 
 function renderTarxetaCompleta(d) {
   const urlImaxe = converterURL(d.imagenURL);
+  const ticker = d.tipo === 'promo' ? renderTicker('var(--azul)') : '';
   return `
     <div class="tarxeta" data-id="${d.codigo || d.tipo}">
       <div class="tarxeta-completa">
         ${urlImaxe ? `<img src="${urlImaxe}" alt="${d.tipo}" loading="lazy">` : ''}
       </div>
+      ${ticker}
     </div>`;
 }
 
@@ -452,6 +527,7 @@ function renderTarxeta(d) {
           ${imaxe}
         </div>
       </div>
+      ${renderTicker(cor)}
     </div>`;
 }
 
@@ -555,6 +631,7 @@ function init(datos) {
 // CARGA DO CSV
 // ============================================================
 async function cargar() {
+  await cargarFrases();
   if (CSV_URL === 'PENDENTE_URL_CARRUSEL') {
     // Datos de exemplo para probar
     const exemplo = [
