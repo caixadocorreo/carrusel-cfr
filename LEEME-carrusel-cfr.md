@@ -1,6 +1,6 @@
 # Carrusel de formacións · CFR de Vigo — Guía de uso
 
-Carrusel de tarxetas que mostra as formacións en prazo de inscrición, embebido na aula virtual de Moodle do CFR de Vigo. É unha páxina web (`index.html`) publicada en GitHub Pages que se conecta automaticamente a follas de Google Sheets.
+Carrusel de tarxetas que mostra as formacións en prazo de inscrición, as sesións do día e contido informativo adicional, embebido na aula virtual de Moodle do CFR de Vigo. É unha páxina web (`index.html`) publicada en GitHub Pages que se conecta automaticamente a varias follas de Google Sheets.
 
 URL en produción: `https://caixadocorreo.github.io/carrusel-cfr/`
 
@@ -8,7 +8,7 @@ URL en produción: `https://caixadocorreo.github.io/carrusel-cfr/`
 
 ## 1. Como se integra en Moodle
 
-Na etiqueta da aula virtual onde se quere mostrar o carrusel, pégase este código en modo HTML (`<>`):
+Na etiqueta da aula virtual, pégase este código en modo HTML (`<>`):
 
 ```html
 <div style="width: 100%; margin: auto;">
@@ -23,29 +23,63 @@ window.addEventListener('message', function(e) {
 </div>
 ```
 
-O script recibe a altura real do carrusel e axusta automaticamente o iframe, polo que non queda espazo en branco nin se corta contido, independentemente do número de relatores ou do tamaño de pantalla.
+O script axusta automaticamente a altura do iframe ao contido real, sen espazo en branco nin contido cortado.
 
 ---
 
-## 2. Que mostra e cando
+## 2. Que contén o carrusel e en que orde
 
-Cada tarxeta amosa unha formación que está **en prazo de inscrición** segundo as datas configuradas. O carrusel avanza automaticamente cada 8 segundos, con botóns de anterior/seguinte e indicadores (puntos) para navegar manualmente.
+O carrusel avanza automaticamente cada 8 segundos. A orde das tarxetas é:
 
-Unha tarxeta de formación ten:
-- Cabeceira (cor configurable): logo CFR · código e título · logo Xacobeo
-- Columna esquerda (35%, mesma cor que a cabeceira): datas, horario, lugar e relator/a(s)
-- Columna dereita (65%): imaxe alusiva á formación, ou texto "+info proximamente" se non hai imaxe
-- Banner inferior cunha nota fixa sobre posibles cambios de horario
+1. **Portada** (se existe e está en prazo) — sempre a primeira
+2. **Sesións de hoxe** (se hai sesións de tarde ese día) — inmediatamente despois da portada
+3. **Formacións**, **promos** e **recomendacións de lectura** — intercaladas en posición aleatoria
+4. **Contraportada** (se existe e está en prazo) — sempre a última
 
 ---
 
-## 3. Fonte de datos principal — folla "Carrusel"
+## 3. Tipos de tarxeta
 
-Publicada como CSV (`CSV_URL` no código). Columnas, por orde:
+### 3.1 Formacións (`Tipo=formacion` ou baleiro)
+Tarxeta horizontal con:
+- **Cabeceira** (cor configurable): logo CFR · código en negrita + título · logo Xacobeo
+- **Columna esquerda** (35%, mesma cor): datas, horario, lugar, relator/a(s) + nota sobre posibles cambios de horario
+- **Columna dereita** (65%): imaxe alusiva ou texto "+info proximamente"
+- **Banner inferior** con frases rotativas
 
+Móstrase desde `DataInicioVisual` até o día seguinte a `DataInicio`.
+
+### 3.2 Sesións de hoxe
+Tarxeta con:
+- **Cabeceira azul** con logos, "Sesións de hoxe" + data + hora actual
+- **Grid de 4 columnas** (15% aula / 35% info / 15% aula / 35% info) e 3 filas = 6 sesións por slide
+- Se hai máis de 6 sesións, xéranse slides adicionais automaticamente
+- Só se amosan sesións con hora de inicio ≥ 13:45
+
+Fonte de datos: **folla de Sesións da cartelería TV** (CSV compartido).
+
+### 3.3 Portada / Contraportada (`Tipo=portada` / `Tipo=contraportada`)
+Imaxe a pantalla completa (proporción 16:9 recomendada). Sen banner inferior.
+
+### 3.4 Promos (`Tipo=promo`)
+Imaxe a pantalla completa intercalada en posición aleatoria. Banner inferior en azul corporativo.
+
+### 3.5 Recomendacións de lectura
+Tarxeta con:
+- **Cabeceira azul** con logos, "+info" + data + hora actual
+- **Columna esquerda** (40%): portada do libro con animación de "respiración" en bucle
+- **Columna dereita** (60%): etiqueta "Recomendación de lectura" + título (azul, negrita) + autor (azul, negrita) + texto da recomendación (azul)
+
+Intercaladas en posición aleatoria. Fonte de datos: **CSV compartido coa cartelería TV**.
+
+---
+
+## 4. Follas de Google Sheets
+
+### Folla "Carrusel" (`CSV_URL`)
 | Columna | Campo | Contido |
 |---|---|---|
-| A | `DataInicioVisual` | Data desde a que se mostra a tarxeta (DD/MM/AAAA) |
+| A | `DataInicioVisual` | Data desde a que se mostra (DD/MM/AAAA) |
 | B | `Codigo` | Código da actividade |
 | C | `Titulo` | Título da formación |
 | D | `DataInicio` | Data de inicio da actividade |
@@ -54,81 +88,69 @@ Publicada como CSV (`CSV_URL` no código). Columnas, por orde:
 | G | `HoraFin` | Hora de fin (HH:MM) |
 | H | `Lugar` | Lugar de celebración |
 | I | `Relatores` | Relator/es, separados por `;` |
-| J | `ImagenURL` | URL da imaxe (ver sección 5) |
-| K | `CorFondo` | Cor hexadecimal da cabeceira e columna esquerda (ex: `#1a5276`). Se está baleiro, usa o azul corporativo `#007bc4` |
-| L | `Tipo` | `formacion` (ou baleiro), `portada`, `contraportada` ou `promo` — ver sección 4 |
+| J | `ImagenURL` | URL da imaxe |
+| K | `CorFondo` | Cor hex da cabeceira (ex: `#1a5276`). Baleiro = azul corporativo |
+| L | `Tipo` | `formacion`, `portada`, `contraportada` ou `promo` |
 
-### Regra de visualización das formacións normais (`Tipo=formacion` ou baleiro)
-Unha formación móstrase desde `DataInicioVisual` (inclusive) até o día **seguinte** a `DataInicio` (sen incluír). É dicir, deixa de mostrarse automaticamente cando comeza a actividade.
+### Folla "Sesións" (`CSV_SESIONS_URL`)
+Compartida coa cartelería TV. Columnas: `Data`, `Aula`, `Código`, `Título`, `Relatores`, `HoraInicio`, `HoraFin`.
 
----
-
-## 4. Portadas, contraportadas e promocións (`Tipo`)
-
-| `Tipo` | Posición no carrusel | Banner inferior |
+### Folla "Frases" (`CSV_FRASES_URL`)
+| Columna | Campo | Contido |
 |---|---|---|
-| `portada` | Sempre a primeira tarxeta | Non |
-| `contraportada` | Sempre a última tarxeta | Non |
-| `promo` | Posición aleatoria entre as formacións (cambia cada vez que se carga a páxina) | Si, en azul corporativo |
-| `formacion` / baleiro | Tarxeta normal | Si, na cor configurada en `CorFondo` |
+| A | `Texto` | Frase a mostrar no banner |
+| B | `Activo` | `Si`/`Non` |
 
-Para `portada`, `contraportada` e `promo` só fan falta os campos `Tipo`, `ImagenURL`, `DataInicioVisual` e `DataFin`; o resto pódense deixar baleiros.
-
-### Regra de visualización para portada/contraportada/promo
-Móstranse desde `DataInicioVisual` (inclusive) até o día **seguinte** a `DataFin` (sen incluír). Se `DataFin` está baleira, móstranse desde `DataInicioVisual` en adiante sen data de remate.
-
-### Imaxe recomendada
-Proporción **16:9** (ex: 1200×675 px), para que se vexa correctamente tanto en móbil como en escritorio.
-
-### Reutilizar unha portada/promo máis tarde
-Non é preciso borrar a fila. Pon `DataFin` no pasado para que deixe de mostrarse, e cando queiras reactivala, actualiza `DataInicioVisual`/`DataFin` ás novas datas. Podes ter varias filas do mesmo `Tipo` con datas correlativas para ir rotando contidos.
+### Folla "Lecturas" (`CSV_LECTURAS_URL`)
+Compartida coa cartelería TV.
+| Columna | Campo | Contido |
+|---|---|---|
+| A | `Titulo` | Título do libro |
+| B | `Autor` | Autor/a |
+| C | `Recomendacion` | Texto breve (2-3 liñas) |
+| D | `ImagenURL` | Portada do libro (vertical, proporción 2:3) |
+| E | `DataInicioVisual` | Data de inicio de visualización (DD/MM/AAAA) |
+| F | `DataFin` | Data de fin de visualización (DD/MM/AAAA) |
 
 ---
 
 ## 5. Imaxes desde Google Drive
 
-No campo `ImagenURL` pódese pegar directamente o enlace normal de "Compartir" de Google Drive (`https://drive.google.com/file/d/ID/view?usp=...`). O sistema convérteo automaticamente ao formato `https://lh3.googleusercontent.com/d/ID`, que funciona sen problemas de CORS dentro do iframe.
+Pega o enlace normal de "Compartir" (`https://drive.google.com/file/d/ID/view?usp=...`). O sistema convérteo automaticamente ao formato `lh3.googleusercontent.com` que funciona sen problemas de CORS.
 
-**Importante**: o ficheiro en Drive ten que estar compartido como "Calquera persoa coa ligazón" para que a imaxe sexa visible.
+O ficheiro en Drive ten que estar compartido como **"Calquera persoa coa ligazón"**.
 
 ---
 
 ## 6. Banner inferior con mensaxes (ticker)
 
-Franxa con texto en movemento continuo (dereita → esquerda), branco negrita, que aparece en todas as tarxetas excepto en portada e contraportada.
+Franxa con texto en movemento continuo (dereita → esquerda), branco negrita:
+- **Formacións**: cor de `CorFondo`
+- **Promos e lecturas**: azul corporativo
+- **Portada/contraportada**: sen banner
 
-- **Formacións**: fondo da mesma cor que `CorFondo` da tarxeta
-- **Promos**: fondo azul corporativo
-
-A velocidade é constante (proporcional á lonxitude total do texto) e o movemento páuse ao pasar o rato por riba ou ao enfocar con teclado (accesibilidade), e respecta a preferencia do sistema "reducir movemento".
-
-### Fonte de datos — folla "Frases" (`CSV_FRASES_URL`)
-| Columna | Campo | Contido |
-|---|---|---|
-| A | `Texto` | Frase a mostrar |
-| B | `Activo` | `Si`/`Non` — se é `Non`, a frase non se mostra (sen necesidade de borrala) |
-
-Todas as frases activas concaténanse e rotan en bucle continuo na mesma secuencia para todo o carrusel.
+Páusase ao pasar o rato por riba (accesibilidade) e respecta `prefers-reduced-motion`.
 
 ---
 
-## 7. Resumo de ligazóns CSV configuradas
+## 7. Resumo de constantes CSV no código
 
-No código (`index.html`), atópanse dúas constantes coas URLs dos CSV publicados:
+| Constante | Folla |
+|---|---|
+| `CSV_URL` | Carrusel (formacións, portadas, promos...) |
+| `CSV_SESIONS_URL` | Sesións TV (compartida) |
+| `CSV_FRASES_URL` | Frases do banner |
+| `CSV_LECTURAS_URL` | Lecturas (compartida coa cartelería TV) |
 
-- `CSV_URL` → folla "Carrusel" (formacións, portadas, contraportadas, promos)
-- `CSV_FRASES_URL` → folla "Frases" (mensaxes do banner)
-
-Se algunha folla cambia de URL de publicación, hai que actualizar a constante correspondente no código e volver subir o ficheiro a GitHub.
+Se algunha folla cambia de URL de publicación, actualiza a constante no código e sube de novo a GitHub.
 
 ---
 
 ## 8. Actualización do sistema
 
-Para cambios no deseño, lóxica ou estrutura (non só contido):
+Para cambios no **contido** (formacións, frases, lecturas, portadas/promos): editar as follas de Google Sheets — non hai que tocar o código.
 
+Para cambios no **deseño ou lóxica**:
 1. Editar o ficheiro `index.html`
-2. Subir a GitHub no repositorio `caixadocorreo/carrusel-cfr`, substituíndo o ficheiro existente (Add file → Upload files)
-3. A páxina publicada en GitHub Pages actualízase automaticamente uns minutos despois
-
-Para cambios de **contido** (novas formacións, imaxes, frases, cores, portadas/promos) **non hai que tocar o código** — só editar as follas de Google Sheets "Carrusel" e "Frases".
+2. Subir a GitHub en `caixadocorreo/carrusel-cfr` (Add file → Upload files)
+3. GitHub Pages actualízase automaticamente en poucos minutos
