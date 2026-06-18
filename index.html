@@ -221,6 +221,125 @@
     text-align: center;
   }
 
+  /* Tarxeta de sesións de hoxe */
+  .sesions-cabeceira {
+    background: var(--azul);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .sesions-cab-logo {
+    height: 36px;
+    width: auto;
+    mix-blend-mode: screen;
+    flex-shrink: 0;
+  }
+  .sesions-cab-centro {
+    flex: 1;
+    text-align: center;
+  }
+  .sesions-cab-titulo {
+    color: white;
+    font-size: clamp(15px, 1.8vw, 22px);
+    font-weight: 700;
+  }
+  .sesions-cab-data {
+    color: rgba(255,255,255,0.85);
+    font-size: clamp(11px, 1.2vw, 14px);
+  }
+  .sesions-cab-hora {
+    color: white;
+    font-size: clamp(13px, 1.5vw, 18px);
+    font-weight: 700;
+  }
+  .sesions-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 20% 30% 20% 30%;
+    grid-template-rows: repeat(3, 1fr);
+    overflow: hidden;
+  }
+  .sesion-cel-aula {
+    background: var(--azul);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    gap: 4px;
+  }
+  .sesion-cel-aula-nome {
+    color: white;
+    font-size: clamp(12px, 1.6vw, 20px);
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .sesion-cel-aula-andar {
+    color: rgba(255,255,255,0.75);
+    font-size: clamp(10px, 1.1vw, 13px);
+    text-align: center;
+  }
+  .sesion-cel-info {
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 12px;
+    border: 1px solid rgba(0,0,0,0.07);
+    gap: 3px;
+    overflow: hidden;
+  }
+  .sesion-cod {
+    color: var(--azul);
+    font-size: clamp(10px, 1.1vw, 13px);
+    font-weight: 700;
+  }
+  .sesion-titulo {
+    color: var(--azul);
+    font-size: clamp(11px, 1.3vw, 15px);
+    font-weight: 700;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .sesion-relator {
+    color: #444;
+    font-size: clamp(10px, 1.1vw, 13px);
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .sesion-hora {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0,123,196,0.1);
+    color: var(--azul);
+    font-size: clamp(10px, 1.1vw, 13px);
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 2px;
+    width: fit-content;
+  }
+  .sesion-cel-baleira {
+    background: var(--azul);
+    border: 1px solid rgba(255,255,255,0.1);
+    opacity: 0.3;
+  }
+  .sesion-cel-info-baleira {
+    background: #f8f9fa;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+
   /* Banner ticker inferior */
   .ticker-wrap {
     overflow: hidden;
@@ -309,6 +428,7 @@
 // CONFIGURACIÓN
 // ============================================================
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTXug9fi-BDfJdcjfWOrGwx4cnuTMTuRTRCthpGMrLwcV6ldAF3VgLK472PzSHJPzooHIdphoj9W1Uq/pub?gid=0&single=true&output=csv';
+const CSV_SESIONS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQk7p591xyGaL3Fjpz7Eb2yy8N4SuRsXUtvExJ_y64NWveCTBfNLuoM62wNyrHnCljqd_cEUr9G5oaB/pub?gid=0&single=true&output=csv';
 const CSV_FRASES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRsD_Uk6MrcJlJ3K5-57qWkR3F0NLmUhbAwob0DpW4-8Nx2iO68srz4jlwrdd9CoY8Mf3soWUvW7Dvi/pub?gid=0&single=true&output=csv';
 
 async function cargarFrases() {
@@ -431,6 +551,54 @@ function renderRelators(str) {
 }
 
 let FRASES = [];
+let SESIONS = [];
+
+function parsarDataSesion(str) {
+  if (!str) return null;
+  const [d,m,a] = str.trim().split('/');
+  return new Date(parseInt(a), parseInt(m)-1, parseInt(d));
+}
+
+function dataHoxeCompCarrusel() {
+  const h = new Date();
+  const d = String(h.getDate()).padStart(2,'0');
+  const m = String(h.getMonth()+1).padStart(2,'0');
+  return `${d}/${m}/${h.getFullYear()}`;
+}
+
+async function cargarSesions() {
+  try {
+    const resp = await fetch(CSV_SESIONS_URL);
+    const texto = await resp.text();
+    const liñas = texto.trim().split('\n').slice(1);
+    const hoxe = dataHoxeCompCarrusel();
+    SESIONS = liñas.filter(l => l.trim()).map(l => {
+      const cols = [];
+      let cur='', inQ=false;
+      for (let i=0;i<l.length;i++){
+        const c=l[i];
+        if(c==='"'){inQ=!inQ;}
+        else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+        else{cur+=c;}
+      }
+      cols.push(cur.trim());
+      return {
+        data:       cols[0]||'',
+        aula:       cols[1]||'',
+        cod:        cols[2]||'',
+        titulo:     cols[3]||'',
+        relator:    cols[4]||'',
+        horaInicio: cols[5]||'',
+        horaFin:    cols[6]||'',
+      };
+    }).filter(s => {
+      if (s.data !== hoxe) return false;
+      const h = parseInt((s.horaInicio||'0:0').split(':')[0]);
+      const min = parseInt((s.horaInicio||'0:0').split(':')[1]||'0');
+      return h + min/60 >= 13.75;
+    });
+  } catch(e) { console.error('Erro ao cargar sesions:', e); }
+}
 
 function renderTicker(cor) {
   if (!FRASES.length) return '';
@@ -443,6 +611,109 @@ function renderTicker(cor) {
     <div class="ticker-wrap" style="background:${cor}" tabindex="0" aria-label="Mensaxes informativas">
       <div class="ticker-track" style="--ticker-duracion:${duracion}s">${seq}${seq}</div>
     </div>`;
+}
+
+// Mapa de andares para as aulas
+const INFO_AULAS_CAR = {
+  'Aula 0': 'Planta baixa', 'Salón de actos': 'Planta baixa',
+  'Polo A': 'Planta baixa', 'Polo B': 'Planta baixa',
+  'Aula 1': '1º andar', 'Aula 2': '1º andar', 'Aula 3': '1º andar',
+  'Aula 4': '1º andar', 'Aula 5': '1º andar', 'Aula 6': '1º andar',
+  'Aula 7': '2º andar', 'Aula 8': '2º andar',
+};
+
+function renderTarxetasSesions() {
+  if (!SESIONS.length) return [];
+
+  const tarxetas = [];
+  const porSlide = 6;
+  const meses = ['xaneiro','febreiro','marzo','abril','maio','xuño',
+                 'xullo','agosto','setembro','outubro','novembro','decembro'];
+  const agora = new Date();
+  const dataStr = `${agora.getDate()} de ${meses[agora.getMonth()]} de ${agora.getFullYear()}`;
+
+  for (let i = 0; i < SESIONS.length; i += porSlide) {
+    const grupo = SESIONS.slice(i, i + porSlide);
+
+    // Construír HTML da tarxeta
+    const tarxeta = document.createElement('div');
+    tarxeta.className = 'tarxeta';
+    tarxeta.dataset.tipo = 'sesions';
+
+    // Cabeceira
+    tarxeta.innerHTML = `
+      <div class="sesions-cabeceira">
+        <img class="sesions-cab-logo" src="${document.querySelector('.cab-logo')?.src || ''}" alt="CFR Vigo">
+        <div class="sesions-cab-centro">
+          <div class="sesions-cab-titulo">Sesións de hoxe</div>
+          <div class="sesions-cab-data">${dataStr}</div>
+          <div class="sesions-cab-hora" id="sesions-hora-${i}">${String(agora.getHours()).padStart(2,'0')}:${String(agora.getMinutes()).padStart(2,'0')}</div>
+        </div>
+        <img class="sesions-cab-logo" src="${document.querySelectorAll('.cab-logo')[1]?.src || ''}" alt="Xacobeo 2027">
+      </div>`;
+
+    // Grid
+    const grid = document.createElement('div');
+    grid.className = 'sesions-grid';
+
+    // Columna esquerda (sesions 0-2) e dereita (sesions 3-5)
+    const esq = grupo.slice(0, 3);
+    const der = grupo.slice(3, 6);
+    const maxFilas = 3;
+
+    for (let f = 0; f < maxFilas; f++) {
+      // Par esquerdo
+      const se = esq[f];
+      if (se) {
+        const celAula = document.createElement('div');
+        celAula.className = 'sesion-cel-aula';
+        celAula.innerHTML = `
+          <div class="sesion-cel-aula-nome">${se.aula}</div>
+          <div class="sesion-cel-aula-andar">${INFO_AULAS_CAR[se.aula]||''}</div>`;
+        grid.appendChild(celAula);
+
+        const celInfo = document.createElement('div');
+        celInfo.className = 'sesion-cel-info';
+        celInfo.innerHTML = `
+          <div class="sesion-cod">${se.cod}</div>
+          <div class="sesion-titulo">${se.titulo}</div>
+          <div class="sesion-relator">${(se.relator||'').replace(/;/g,'<br>')}</div>
+          <div class="sesion-hora">⏱ ${se.horaInicio} – ${se.horaFin}</div>`;
+        grid.appendChild(celInfo);
+      } else {
+        grid.appendChild(Object.assign(document.createElement('div'), {className:'sesion-cel-baleira'}));
+        grid.appendChild(Object.assign(document.createElement('div'), {className:'sesion-cel-info-baleira'}));
+      }
+
+      // Par dereito
+      const sd = der[f];
+      if (sd) {
+        const celAula = document.createElement('div');
+        celAula.className = 'sesion-cel-aula';
+        celAula.innerHTML = `
+          <div class="sesion-cel-aula-nome">${sd.aula}</div>
+          <div class="sesion-cel-aula-andar">${INFO_AULAS_CAR[sd.aula]||''}</div>`;
+        grid.appendChild(celAula);
+
+        const celInfo = document.createElement('div');
+        celInfo.className = 'sesion-cel-info';
+        celInfo.innerHTML = `
+          <div class="sesion-cod">${sd.cod}</div>
+          <div class="sesion-titulo">${sd.titulo}</div>
+          <div class="sesion-relator">${(sd.relator||'').replace(/;/g,'<br>')}</div>
+          <div class="sesion-hora">⏱ ${sd.horaInicio} – ${sd.horaFin}</div>`;
+        grid.appendChild(celAula);
+        grid.appendChild(celInfo);
+      } else {
+        grid.appendChild(Object.assign(document.createElement('div'), {className:'sesion-cel-baleira'}));
+        grid.appendChild(Object.assign(document.createElement('div'), {className:'sesion-cel-info-baleira'}));
+      }
+    }
+
+    tarxeta.appendChild(grid);
+    tarxetas.push(tarxeta);
+  }
+  return tarxetas;
 }
 
 function converterURL(url) {
@@ -593,6 +864,14 @@ function init(datos) {
   const contido = document.getElementById('contido');
   const nav = document.getElementById('navegacion');
 
+  // Inserir tarxetas de sesións despois da portada
+  const tarxetasSesions = renderTarxetasSesions();
+  if (tarxetasSesions.length > 0) {
+    const portadaIdx = formacions.findIndex(f => f.tipo === 'portada');
+    const insertPos = portadaIdx >= 0 ? portadaIdx + 1 : 0;
+    tarxetasSesions.reverse().forEach(t => formacions.splice(insertPos, 0, { _domEl: t, tipo: 'sesions' }));
+  }
+
   if (formacions.length === 0) {
     contido.innerHTML = `
       <div class="sen-formacions">
@@ -605,11 +884,15 @@ function init(datos) {
     return;
   }
 
-  contido.innerHTML = formacions.map(d =>
-    (d.tipo === 'portada' || d.tipo === 'contraportada' || d.tipo === 'promo')
-      ? renderTarxetaCompleta(d)
-      : renderTarxeta(d)
-  ).join('');
+  formacions.forEach(d => {
+    if (d.tipo === 'sesions' && d._domEl) {
+      contido.appendChild(d._domEl);
+    } else if (d.tipo === 'portada' || d.tipo === 'contraportada' || d.tipo === 'promo') {
+      contido.insertAdjacentHTML('beforeend', renderTarxetaCompleta(d));
+    } else {
+      contido.insertAdjacentHTML('beforeend', renderTarxeta(d));
+    }
+  });
 
   // Dots e navegación
   if (formacions.length > 1) {
@@ -632,6 +915,7 @@ function init(datos) {
 // ============================================================
 async function cargar() {
   await cargarFrases();
+  await cargarSesions();
   if (CSV_URL === 'PENDENTE_URL_CARRUSEL') {
     // Datos de exemplo para probar
     const exemplo = [
