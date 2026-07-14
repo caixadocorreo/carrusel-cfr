@@ -1055,9 +1055,14 @@ function init(datos) {
   const contido = document.getElementById('contido');
   const nav = document.getElementById('navegacion');
 
-  // Intercalar lecturas en posición aleatoria
+  // Intercalar lecturas en posición aleatoria (respectando portada e contraportada)
+  const portadaCount = formacions.filter(f => f.tipo === 'portada').length;
+  const contraportadaCount = formacions.filter(f => f.tipo === 'contraportada').length;
+  const inicioIntercalado = portadaCount;
+  const finIntercalado = formacions.length - contraportadaCount;
   LECTURAS_CAR.forEach(l => {
-    const pos = Math.floor(Math.random() * (formacions.length + 1));
+    const rango = finIntercalado - inicioIntercalado;
+    const pos = inicioIntercalado + Math.floor(Math.random() * (rango + 1));
     formacions.splice(pos, 0, { _lectura: l, tipo: 'lectura' });
   });
 
